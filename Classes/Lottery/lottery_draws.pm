@@ -4,6 +4,7 @@
 #	Date		Version		Note
 #	==========	=======		========================================================================
 #	2016-11-21	v1.00		Original
+#	2016-11-27	v1.01		Change type of ident from "E" to "A"
 #
 package lottery_draws;
 use TableDefault;
@@ -13,7 +14,7 @@ use TableDefault;
 my %fields = (
 	TABLE_NAME		=> [ undef, undef, 'Q', -1, -1 ],	# TABLE name
 	SQL_STATEMENT	=> [ undef, undef, 'Q', -1, -1 ],	# SQL statement
-	ident			=> [ undef, undef, 'E', -1, -1 ],	# ident
+	ident			=> [ undef, undef, 'A', -1, -1 ],	# ident
 	description		=> [ undef, undef, 'S', 64, -1 ],	# character varying(64)
 	draw			=> [ undef, undef, 'I', -1, -1 ],	# int
 	numbers			=> [ undef, undef, 'I', -1, -1 ],	# int

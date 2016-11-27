@@ -7,9 +7,10 @@
 #	Date		Version		Note
 #	==========	=======		===================================================================================
 #	2016-11-21	v0.01		First cut of code
+#	2016-11-27	v0.02		First attempt at basic functionality
 #
 
-use lib "~/bin/Classes";
+use lib "./Classes";
 
 use strict;
 use vars qw($opt_s $opt_b $opt_u $opt_p $opt_d $opt_f $opt_e $opt_h $opt_m $opt_i $opt_t);
@@ -37,6 +38,12 @@ my $version_id = "0.01";
 #-----------------------------------------------------------------------------
 
 my @sql_buffer = qw();
+
+#-----------------------------------------------------------------------------
+# this holds the messages to be mailed to Shiny Ideas
+#-----------------------------------------------------------------------------
+
+my @mail_buffer = qw();
 
 #-----------------------------------------------------------------------------
 # special DEBUG message for help function
@@ -74,8 +81,8 @@ sub DebugMessage {
 #-----------------------------------------------------------------------------
 
 sub BuildNewDrawHistory {
-	my $draw      = shift;
-	my $draw_date = shift;
+	my $draw         = shift;
+	my $draw_date    = shift;
 	my $draw_history = new draw_history;
 	$draw_history->draw($draw);
 	$draw_history->draw_date($draw_date);
@@ -89,13 +96,15 @@ sub BuildNewDrawHistory {
 #-----------------------------------------------------------------------------
 
 sub BuildNewNumberUsage {
-	my $draw    = shift;
-	my $number  = shift;
-	my $special = shift;
+    my $ident        = shift;
+	my $draw         = shift;
+	my $number       = shift;
+	my $is_special   = shift;
 	my $number_usage = new number_usage;
+    $number_usage->ident($ident);
 	$number_usage->draw($draw);
 	$number_usage->number($number);
-	$number_usage->special($special);
+	$number_usage->is_special($is_special);
 	$number_usage->CreateINSERT;
 	push(@sql_buffer, $number_usage->{SQL_STATEMENT}->[0]);
 	return;
@@ -106,10 +115,10 @@ sub BuildNewNumberUsage {
 #-----------------------------------------------------------------------------
 
 sub WriteToLogger {
-	my $dbh = shift;
+	my $dbh     = shift;
 	my $site_id = shift;
 	my $message = shift;
-	my $logger = new Logger;
+	my $logger  = new logger;
 	$logger->site_id($site_id);
 	$logger->logger_description($message);
 	$logger->logger_timestamp("now()");

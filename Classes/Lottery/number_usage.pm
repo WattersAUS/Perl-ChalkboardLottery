@@ -14,7 +14,7 @@ use TableDefault;
 my %fields = (
 	TABLE_NAME		=> [ undef, undef, 'Q', -1, -1 ],	# TABLE name
 	SQL_STATEMENT	=> [ undef, undef, 'Q', -1, -1 ],	# SQL statement
-	ident			=> [ undef, undef, 'E', -1, -1 ],	# ident
+	ident			=> [ undef, undef, 'I', -1, -1 ],	# ident
 	draw			=> [ undef, undef, 'I', -1, -1 ],	# int
 	number			=> [ undef, undef, 'I', -1, -1 ],	# int
 	is_special		=> [ undef, undef, 'B', -1, -1 ],	# int

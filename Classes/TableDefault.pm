@@ -9,8 +9,7 @@
 #	2003-03-20 v1.01 Alter Boolean type handling to match data retutn from SELECT statements
 #						        i.e. TRUE = 1 and FALSE = 0
 #	2003-08-27 v1.02 Change the way we handle 'null'
-#
-# 2016-11-21 v1.03 Add IDENT field ("E") to allow usage with MySQL Database (Welcome Back!)
+#	2016-11-27 v1.04 Add Auto Increment field ("A")
 #
 
 package TableDefault;
@@ -32,7 +31,7 @@ sub FormatDATA {
 	if ($value eq "null") {
 		$string = "null";
 	} else {
-		if (($format eq "I") or ($format eq "F") or ($format eq "E")) {
+		if (($format eq "I") or ($format eq "F") or ($format eq "A")) {
 			$string = $value;
 		} else {
 			if (($format eq "S") or ($format eq "X") or ($format eq "M")) {
@@ -101,8 +100,8 @@ sub DataDISPLAY {
 											if ($self->{$key}->[2] eq "Z") {
 												print "DateTime:\t";
 											} else {
-												if ($self->{$key}->[2] eq "E") {
-													print "Ident:\t\t";
+												if ($self->{$key}->[2] eq "A") {
+													print "Auto I:\t\t";
 												} else {
 													print "*****:\t\t";
 												}
@@ -240,7 +239,7 @@ sub CreateINSERT {
 	$self->{SQL_STATEMENT}->[0] = undef;
 	my $statement = qw();
 	foreach $key (@keys) {
-		if (($self->{$key}->[2] ne "Q") and ($self->{$key}->[2] ne "E")) {
+		if (($self->{$key}->[2] ne "Q") and ($self->{$key}->[2] ne "A")) {
 			if (defined($self->{$key}->[0])) {
 				if (defined($statement)) {
 					$statement .= ", ".$key;
