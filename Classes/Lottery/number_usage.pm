@@ -4,6 +4,7 @@
 #	Date		Version		Note
 #	==========	=======		========================================================================
 #	2016-11-21	v1.00		Original
+#	2016-11-21	v1.01		Update 'special' int to 'is_special' bool
 #
 package number_usage;
 use TableDefault;
