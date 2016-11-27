@@ -16,7 +16,7 @@ my %fields = (
 	ident			=> [ undef, undef, 'E', -1, -1 ],	# ident
 	draw			=> [ undef, undef, 'I', -1, -1 ],	# int
 	number			=> [ undef, undef, 'I', -1, -1 ],	# int
-	special			=> [ undef, undef, 'I', -1, -1 ],	# int
+	is_special		=> [ undef, undef, 'B', -1, -1 ],	# int
 );
 
 sub new {
