@@ -1,38 +1,56 @@
 #!/usr/bin/perl -w
- 
+
+use strict;
 use DBI;
- 
-## mysql user database name
+use lib "./Classes";
+
+## app Version
+my $versionId = "1.01";
+
+## db classes
+use Lottery::lottery_draws;
+
+## mysql user connection details
 my $db ="shinyide2_lottery";
-
-## mysql database user name
-my $user = "shinyide2_access";
- 
-## mysql database password
-my $pass = "2dkh7Gk6SKB";
- 
-## user hostname : This should be "localhost" but it can be diffrent too
+my $user = "shinyide2_ro";
+my $pass = "R3l9c675";
 my $host="10.169.0.121";
- 
-## SQL query
-my $query = "show tables";
- 
-my $dbh = DBI->connect("DBI:mysql:$db:$host", $user, $pass);
-$sqlQuery  = $dbh->prepare($query) or die "Can't prepare $query: $dbh->errstr\n";
- 
-my $rv = $sqlQuery->execute or die "can't execute the query: $sqlQuery->errstr";
- 
-print "*******************************************\n";
-print "*        Database Connection Test         *\n";
-print "*******************************************\n\n";
 
+## SQL query
+my $tableQuery = "show tables";
+
+my $dbHandle  = DBI->connect("DBI:mysql:$db:$host", $user, $pass);
+my $sqlHandle = $dbHandle->prepare($tableQuery) or die "Can't prepare ".$tableQuery."\nERROR: ".$dbHandle->errstr."\n";
+
+$sqlHandle->execute or die "Can't execute ".$tableQuery."\nERROR: ".$sqlHandle->errstr."\n";
+
+print "\n*******************************************\n";
+print "* Database Connection Test          v".$versionId." *\n";
+print "*******************************************\n\n";
 print "List of tables in Database: ".$db."\n\n";
 
-while (@row= $sqlQuery->fetchrow_array()) {
-	my $table = $row[0];
-	print $table."\n";
+while (my @row = $sqlHandle->fetchrow_array()) {
+    my $tableName = $row[0];
+    print "Table: ".$tableName."\n";
 }
 print "\n";
- 
-my $rc = $sqlQuery->finish;
+$sqlHandle->finish;
+
+## use db class to access table and display contents
+
+my $lottery = new lottery_draws;
+$lottery->ResetKEYFIELDS;
+$lottery->CreateSELECT;
+
+#print "Statement : ".$lottery->{SQL_STATEMENT}->[0]."\n\n";
+my $stHandle = $dbHandle->prepare($lottery->{SQL_STATEMENT}->[0]);
+$stHandle->execute;
+while (my @fields = $stHandle->fetchrow) {
+    $lottery->DataINITIALISE(@fields);
+    $lottery->DataDISPLAY();
+}
+$stHandle->finish;
+
+print "\nEnd of Line...\n\n";
+
 exit(0);
