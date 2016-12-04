@@ -119,10 +119,10 @@ if (defined($opt_m)) {
 # main code
 #-----------------------------------------------------------------------------
 
-my $email_to   = "shiny.ideas.uk@gmail.com"
-my $email_from = "test@shiny-ideas.tech"
-my $subject    = "Test Email Message"
-my $body       = "Body of the email test message..."
+my $email_to   = "shiny.ideas.uk\@gmail.com";
+my $email_from = "test\@shiny-ideas.tech";
+my $subject    = "Test Email Message";
+my $body       = "Body of the email test message...";
 
 DebugMessage("Attempting to send test email message...") if ($opt_d);
 SendEmailMessage($email_to, $email_from, $subject, $body);

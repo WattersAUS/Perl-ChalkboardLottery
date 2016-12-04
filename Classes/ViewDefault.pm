@@ -9,7 +9,8 @@
 #	2003-03-20 v1.01   Alter Boolean type handling to match data retutn from SELECT statements
 #                    i.e. TRUE = 1 and FALSE = 0
 #
-# 2016-11-21 v1.03 Add IDENT field ("E") to allow usage with MySQL Database (Welcome Back!)
+#	2016-11-21 v1.03 Add IDENT field ("E") to allow usage with MySQL Database (Welcome Back!)
+#	2016-12-04 v1.04 Changed Auto-Ident to ("A")
 #
 
 package ViewDefault;
@@ -28,7 +29,7 @@ sub FormatDATA {
 	my $value = shift;
 	my $format = shift;
 	my $string = qw();
-	if (($format eq "I") or ($format eq "F") or ($format eq "E")) {
+	if (($format eq "I") or ($format eq "F") or ($format eq "A")) {
 		$string = $value;
 	} else {
 		if (($format eq "S") or ($format eq "X") or ($format eq "M")) {
@@ -96,8 +97,8 @@ sub DataDISPLAY {
 											if ($self->{$key}->[2] eq "Z") {
 												print "Timestamp:\t";
 											} else {
-												if ($self->{$key}->[2] eq "E") {
-													print "Ident:\t\t";
+												if ($self->{$key}->[2] eq "A") {
+													print "Auto I:\t\t";
 												} else {
 													print "*****:\t\t";
 												}

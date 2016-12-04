@@ -10,6 +10,7 @@
 #	2016-11-27	v0.02		First attempt at basic functionality
 #	2016-11-28	v0.03		Moved logger write to sqlBuffer
 #	2016-11-30	v0.04		Added a WorkSpace directory for file processing
+#	2016-12-04	v0.05		Inserts/Update code in place
 #
 
 use lib "./Classes";
@@ -88,42 +89,6 @@ sub debugMessage {
     }
     print "\n";
     return;
-}
-
-#-----------------------------------------------------------------------------
-# build a 'draw_history' record
-#-----------------------------------------------------------------------------
-
-sub buildNewDrawHistory {
-	my $draw        = shift;
-	my $drawDate    = shift;
-	my $drawHistory = new draw_history;
-	$drawHistory->draw($draw);
-	$drawHistory->draw_date($drawDate);
-	$drawHistory->CreateINSERT;
-    debugMessage($drawHistory->{SQL_STATEMENT}->[0]);
-	push(@sqlBuffer, $drawHistory->{SQL_STATEMENT}->[0]);
-	return;
-}
-
-#-----------------------------------------------------------------------------
-# build a 'number_usage' record
-#-----------------------------------------------------------------------------
-
-sub buildNewNumberUsage {
-    my $ident       = shift;
-	my $draw        = shift;
-	my $number      = shift;
-	my $isSpecial   = shift;
-	my $numberUsage = new number_usage;
-    $numberUsage->ident($ident);
-	$numberUsage->draw($draw);
-	$numberUsage->number($number);
-	$numberUsage->is_special($isSpecial);
-	$numberUsage->CreateINSERT;
-    debugMessage($numberUsage->{SQL_STATEMENT}->[0]);
-	push(@sqlBuffer, $numberUsage->{SQL_STATEMENT}->[0]);
-	return;
 }
 
 #-----------------------------------------------------------------------------
@@ -212,7 +177,7 @@ sub extractFromArray {
     my $tag     = shift;
     my @data    = @_;
     my @extracted = qw();
-    logMessage("Searching for tag ".$tag." in results page ...");
+    logMessage("Searching for tag (".$tag.") in results page ...");
     foreach my $line (@data) {
         if ($line =~ m/$tag/) {
             $line =~ s/.*$tag//;
@@ -226,23 +191,59 @@ sub extractFromArray {
 #-----------------------------------------------------------------------------
 # parse the array to extract the data string
 #
-# first find it
-# then strip out any lead spaces
-# finally the html tags
+# Fri 25 Nov 2016 for eg
 #-----------------------------------------------------------------------------
 
-sub extractDateFromArray {
+sub convertMonthToInteger {
+    my $mth = shift;
+    my %month = (
+        'Jan' => '01',
+        'Feb' => '02',
+        'Mar' => '03',
+        'Apr' => '04',
+        'May' => '05',
+        'Jun' => '06',
+        'Jul' => '07',
+        'Aug' => '08',
+        'Sep' => '09',
+        'Oct' => '10',
+        'Nov' => '11',
+        'Dec' => '12'
+        );
+    return $month{$mth};
+}
+
+sub decodeDayMonthYear {
+    my $dateStr = shift;
+    my $day   = 1;
+    my $month = 1;
+    my $year  = 1;
+    my @nums  = $dateStr =~ /(\d+)/g;
+    if ($#nums > 0) {
+        $day   =  $nums[0];
+        $year  = $nums[1];
+        $month =  $dateStr;
+        $month =~ s/.*$day//;
+        $month =~ s/\s//g;
+        $month =~ s/$year//;
+        $month = convertMonthToInteger($month);
+    }
+    return ($day, $month, $year);
+}
+
+sub extractDayMonthYearFromArray {
     my @data = @_;
+
     foreach my $line (@data) {
         if ($line =~ m/<h1>[MTWTFD][ouehra][meduitn].*20[12][1-9]<\/h1>/) {
             $line =~ s/^[ \t]*//;
             $line =~ s/<[\/]{0,1}h1>//g;
             $line =~ s/\n//g;
             $line =~ s/\r//g;
-            return $line;
+            return decodeDayMonthYear($line);
         }
     }
-    return "";
+    return (1, 1, 1);
 }
 
 #-----------------------------------------------------------------------------
@@ -272,30 +273,65 @@ sub checkNumbersWithinLimits {
             $passed = 0;
         }
     }
+    logMessage("Found ".$numbers." expected (".$type.") within range 1 to ".$upper."...");
     return $passed;
 }
 
 #-----------------------------------------------------------------------------
-# store the details of the draw and update the lottery
+# store 'number_usage'
 #-----------------------------------------------------------------------------
 
+sub buildNewNumberUsage {
+    my $ident       = shift;
+	my $draw        = shift;
+	my $number      = shift;
+	my $isSpecial   = shift;
+	my $numberUsage = new number_usage;
+    $numberUsage->ident($ident);
+	$numberUsage->draw($draw);
+	$numberUsage->number($number);
+	$numberUsage->is_special($isSpecial);
+	$numberUsage->CreateINSERT;
+    debugMessage($numberUsage->{SQL_STATEMENT}->[0]);
+	push(@sqlBuffer, $numberUsage->{SQL_STATEMENT}->[0]);
+	return;
+}
+
 sub storeNumberUsage {
-
-    logMessage("Storing Number Usage...");
-
+    my $ident   = shift;
+    my $draw    = shift;
+    my $special = shift;
+    my @array   = @_;
+    foreach my $num (@array) {
+        buildNewNumberUsage($ident, $draw, $num, $special);
+    }
     return;
+}
+
+#-----------------------------------------------------------------------------
+# store 'draw_history'
+#-----------------------------------------------------------------------------
+
+sub buildNewDrawHistory {
+    my $ident       = shift;
+	my $draw        = shift;
+	my $drawDate    = shift;
+	my $drawHistory = new draw_history;
+    $drawHistory->ident($ident);
+	$drawHistory->draw($draw);
+	$drawHistory->draw_date($drawDate);
+    $drawHistory->last_modified("now()");
+	$drawHistory->CreateINSERT;
+    debugMessage($drawHistory->{SQL_STATEMENT}->[0]);
+	push(@sqlBuffer, $drawHistory->{SQL_STATEMENT}->[0]);
+	return;
 }
 
 sub storeDrawHistory {
-
-    logMessage("Storing Draw History...");
-
-    return;
-}
-
-sub updateLotteryDraw {
-    logMessage("Updating Lottery Draw...");
-
+    my $ident   = shift;
+    my $draw    = shift;
+    my $dateStr = shift;
+    buildNewDrawHistory($ident, $draw, $dateStr);
     return;
 }
 
@@ -352,19 +388,27 @@ sub processLotteryDraws {
         } else {
             my @data = loadResultsIntoArray($downloadFile);
             logMessage("Loaded results page, ".$#data." lines into an array for processing...");
-            my @resultNumbers  = extractFromArray($numbers,  $numbersTag, @data);
-            my @specialNumbers = extractFromArray($specials, $specialsTag, @data);
-            my $dateStr        = extractDateFromArray(@data);
+            my @resultNumbers        = extractFromArray($numbers,  $numbersTag, @data);
+            my @specialNumbers       = extractFromArray($specials, $specialsTag, @data);
+            my ($day, $month, $year) = extractDayMonthYearFromArray(@data);
             if (checkNumbersWithinLimits($numbers, $upperNumber, "number", @resultNumbers) == 1) {
                 if (checkNumbersWithinLimits($specials, $upperSpecial, "special", @specialNumbers) == 1) {
                     # make sure we pass all checks before we decide to store the values
                     if (($#resultNumbers + 1) > 0) {
-                        storeNumberUsage($identifier, $draw, $numbers, 0, @resultNumbers);
+                        storeNumberUsage($identifier, $draw, 0, @resultNumbers);
                         if (($#specialNumbers + 1) > 0) {
-                            storeNumberUsage($identifier, $draw, $specials, 1, @specialNumbers);
+                            storeNumberUsage($identifier, $draw, 1, @specialNumbers);
                         }
-                        storeDrawHistory($identifier, $draw, $dateStr);
-                        updateLotteryDraw($identifier, $draw);
+                        storeDrawHistory($identifier, $draw, $year."-".$month."-".$day);
+                        # now build the UPDATE for the draw we've downloaded
+                        $draws->ResetKEYFIELDS;
+                        $draws->SetKEYFIELDS("ident");
+                        $draws->draw($draw);
+                        $draws->CreateUPDATE;
+                        $draws->CreateCONDITION;
+                        debugMessage($draws->{SQL_STATEMENT}->[0]);
+                    	push(@sqlBuffer, $draws->{SQL_STATEMENT}->[0]);
+                        processSQLBuffer($dbHandle);
                     }
                 }
             }
@@ -376,7 +420,6 @@ sub processLotteryDraws {
 
 #-----------------------------------------------------------------------------
 # we should now have an array full of SQL commands to apply to the DB
-# if we don't have any ACTIVITY records then don't apply any
 #
 # after use make sure we zap it
 #-----------------------------------------------------------------------------
@@ -384,6 +427,11 @@ sub processLotteryDraws {
 sub processSQLBuffer {
 	my $dbHandle = shift;
     my $count    = 0;
+    if ($opt_i) {
+        debugMessage("Applying SQL Statements to database...");
+    } else {
+        debugMessage("Database writes are disabled...");
+    }
 	foreach my $sql_statement (@sqlBuffer) {
 		if ($opt_i) {
 			my $sth = $dbHandle->prepare($sql_statement);
