@@ -11,16 +11,17 @@
 #	2016-11-28	v0.03		Moved logger write to sqlBuffer
 #	2016-11-30	v0.04		Added a WorkSpace directory for file processing
 #	2016-12-04	v0.05		Inserts/Update code in place
+#	2016-12-05	v0.06		Fixed regrex for date extraction
+#	2016-12-05	v1.00		Release version
 #
 
-use lib "./Classes";
+use lib "/var/sites/s/shiny-ideas.tech/bin/Classes";
 
 use strict;
-use vars qw($opt_d $opt_e $opt_h $opt_m $opt_i $opt_t $opt_w);
+use vars qw($opt_d $opt_h $opt_i $opt_t $opt_w);
 use Getopt::Std;
 use DBI;
 use File::Basename;
-use MIME::Lite;
 
 #-----------------------------------------------------------------------------
 # ok here's the db objects to access
@@ -35,7 +36,7 @@ use Lottery::number_usage;
 # only globals in the whole program (I hope)
 #-----------------------------------------------------------------------------
 
-my $version_id = "0.04";
+my $version_id = "1.00";
 
 #-----------------------------------------------------------------------------
 # this holds sql statements batched up (bit like a transaction for each line)
@@ -67,9 +68,10 @@ sub debugHelpMessage {
 #-----------------------------------------------------------------------------
 
 sub logMessage {
+    my $ident   = shift;
     my $message = shift;
     debugMessage($message);
-    buildLogger($message);
+    buildLogger($ident, $message);
     return;
 }
 
@@ -96,37 +98,15 @@ sub debugMessage {
 #-----------------------------------------------------------------------------
 
 sub buildLogger {
+    my $ident    = shift;
 	my $message  = shift;
 	my $logger   = new logger;
+    $logger->ident($ident);
 	$logger->description($message);
 	$logger->last_modified("now()");
 	$logger->CreateINSERT;
 	debugMessage($logger->{SQL_STATEMENT}->[0]);
     push(@sqlBuffer, $logger->{SQL_STATEMENT}->[0]);
-	return;
-}
-
-#-----------------------------------------------------------------------------
-# email to selected user
-#-----------------------------------------------------------------------------
-
-sub sendEmailMessage {
-	my $fromWhom = shift;
-	my $toWhom   = shift;
-	my $subject  = shift;
-	my $body     = shift;
-	debugMessage("Sending mail message to ".$toWhom." (".$subject.")");
-	my $mailMsg = MIME::Lite->new(
-			From	=>	$fromWhom,
-			To		=>	$toWhom,
-			Subject	=>	$subject,
-			Type	=>	'multipart/mixed'
-	) or debugMessage("Failed to send mail message to ".$toWhom." (".$subject.")");
-	$mailMsg->attach(
-			Type	=>	'text/plain',
-			Data	=>	$body
-	);
-	$mailMsg->send();
 	return;
 }
 
@@ -173,11 +153,12 @@ sub loadResultsIntoArray {
 #-----------------------------------------------------------------------------
 
 sub extractFromArray {
+    my $ident   = shift;
     my $numbers = shift;
     my $tag     = shift;
     my @data    = @_;
     my @extracted = qw();
-    logMessage("Searching for tag (".$tag.") in results page ...");
+    logMessage($ident, "Searching for tag (".$tag.") in results page ...");
     foreach my $line (@data) {
         if ($line =~ m/$tag/) {
             $line =~ s/.*$tag//;
@@ -220,12 +201,12 @@ sub decodeDayMonthYear {
     my $year  = 1;
     my @nums  = $dateStr =~ /(\d+)/g;
     if ($#nums > 0) {
-        $day   =  $nums[0];
+        $day   = $nums[0];
         $year  = $nums[1];
         $month =  $dateStr;
+        $month =~ s/$year//;
         $month =~ s/.*$day//;
         $month =~ s/\s//g;
-        $month =~ s/$year//;
         $month = convertMonthToInteger($month);
     }
     return ($day, $month, $year);
@@ -235,7 +216,7 @@ sub extractDayMonthYearFromArray {
     my @data = @_;
 
     foreach my $line (@data) {
-        if ($line =~ m/<h1>[MTWTFD][ouehra][meduitn].*20[12][1-9]<\/h1>/) {
+        if ($line =~ m/<h1>[MTWTFS][ouehra][neduit].*20[12][1-9]<\/h1>/) {
             $line =~ s/^[ \t]*//;
             $line =~ s/<[\/]{0,1}h1>//g;
             $line =~ s/\n//g;
@@ -254,6 +235,7 @@ sub extractDayMonthYearFromArray {
 #-----------------------------------------------------------------------------
 
 sub checkNumbersWithinLimits {
+    my $ident   = shift;
     my $numbers = shift;
     my $upper   = shift;
     my $type    = shift;
@@ -262,18 +244,18 @@ sub checkNumbersWithinLimits {
 
     # have we got the right number of values
     if ($numbers != ($#array + 1)) {
-        logMessage("ERROR: Loaded ".($#array + 1)." ".$type."s this does not match the expected value of ".$numbers."...");
+        logMessage($ident, "ERROR: Loaded ".($#array + 1)." ".$type."s this does not match the expected value of ".$numbers."...");
         $passed = 0;
     }
 
     # are they within range
     foreach my $num (@array) {
         if (($num < 1) || ($num > $upper)) {
-            logMessage("ERROR: The ".$type." ".$num." is not within the expected range of values 1 to ".$upper."...");
+            logMessage($ident, "ERROR: The ".$type." ".$num." is not within the expected range of values 1 to ".$upper."...");
             $passed = 0;
         }
     }
-    logMessage("Found ".$numbers." expected (".$type.") within range 1 to ".$upper."...");
+    logMessage($ident, "Found ".$numbers." expected (".$type.") within range 1 to ".$upper."...");
     return $passed;
 }
 
@@ -378,21 +360,21 @@ sub processLotteryDraws {
         $url             =~ s/DRAWNUMBER/$draw/g;
 
         # get the results page itself
-        logMessage("Ready to get Lottery results for (".$draws->{description}->[0]."), draw (".$draw."), into file (".$filename."), using url (".$url.")");
+        logMessage($identifier, "Ready to get Lottery results for (".$draws->{description}->[0]."), draw (".$draw."), into file (".$filename."), using url (".$url.")");
         my $downloadFile = $wrkSpace."/".$filename;
         getResultsPage($url, $downloadFile);
 
         # check we got a file, extract the numbers / specials / date and validate
         if (! -e $downloadFile) {
-            logMessage("ERROR: Unable to find file (".$downloadFile.") to process...\n");
+            logMessage($identifier, "ERROR: Unable to find file (".$downloadFile.") to process...\n");
         } else {
             my @data = loadResultsIntoArray($downloadFile);
-            logMessage("Loaded results page, ".$#data." lines into an array for processing...");
-            my @resultNumbers        = extractFromArray($numbers,  $numbersTag, @data);
-            my @specialNumbers       = extractFromArray($specials, $specialsTag, @data);
+            logMessage($identifier, "Loaded results page, ".$#data." lines into an array for processing...");
+            my @resultNumbers        = extractFromArray($identifier, $numbers,  $numbersTag, @data);
+            my @specialNumbers       = extractFromArray($identifier, $specials, $specialsTag, @data);
             my ($day, $month, $year) = extractDayMonthYearFromArray(@data);
-            if (checkNumbersWithinLimits($numbers, $upperNumber, "number", @resultNumbers) == 1) {
-                if (checkNumbersWithinLimits($specials, $upperSpecial, "special", @specialNumbers) == 1) {
+            if (checkNumbersWithinLimits($identifier, $numbers, $upperNumber, "number", @resultNumbers) == 1) {
+                if (checkNumbersWithinLimits($identifier, $specials, $upperSpecial, "special", @specialNumbers) == 1) {
                     # make sure we pass all checks before we decide to store the values
                     if (($#resultNumbers + 1) > 0) {
                         storeNumberUsage($identifier, $draw, 0, @resultNumbers);
@@ -404,6 +386,7 @@ sub processLotteryDraws {
                         $draws->ResetKEYFIELDS;
                         $draws->SetKEYFIELDS("ident");
                         $draws->draw($draw);
+                        $draws->last_modified("now()");
                         $draws->CreateUPDATE;
                         $draws->CreateCONDITION;
                         debugMessage($draws->{SQL_STATEMENT}->[0]);
@@ -458,7 +441,7 @@ my $wrksp = "./";
 # check for any command line params and set appropriately
 #-----------------------------------------------------------------------------
 
-getopts('dehim:tw:');
+getopts('dhitw:');
 
 # help screen
 if (defined($opt_h)) {
@@ -467,9 +450,7 @@ if (defined($opt_h)) {
 	debugHelpMessage( "\t-i (Activate Writing to DB)");
 	debugHelpMessage( "\t-h (view this HELP Mode)");
 	debugHelpMessage( "\t-d (turn on DEBUG Mode)");
-	debugHelpMessage( "\t-e (turn on EMAIL Mode)");
 	debugHelpMessage( "\t-t (turn on date/time stamp on DEBUG messages)");
-	debugHelpMessage( "\t-m <SMTP-server> (use this SMTP address and not SENDMAIL)");
     debugHelpMessage( "\t-w <DIR>         (workspace directory to use)\n");
 	exit(0);
 }
@@ -479,19 +460,6 @@ if (defined($opt_t)) {
 	debugMessage("Date/Time Stamp Active");
 } else {
     debugMessage("Date/Time Stamp Inactive");
-}
-
-# email mode
-if (defined($opt_e)) {
-	debugMessage("Email Sending Active");
-} else {
-	debugMessage("Email Sending Inactive");
-}
-
-# define a mail server if needed
-if (defined($opt_m)) {
-	debugMessage("Mail Server: ".$opt_m);
-	MIME::Lite->send('smtp', $opt_m, Timeout=>60);
 }
 
 # work directory
