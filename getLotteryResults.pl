@@ -436,10 +436,10 @@ sub processSQLBuffer {
 # db connection vars / command line params
 #-----------------------------------------------------------------------------
 
-my $db   = "shinyide2_lottery";
-my $user = "shinyide2_ro";
-my $pass = "R3l9c675";
-my $host = "10.169.0.121";
+my $db   = "";
+my $user = "";
+my $pass = "";
+my $host = "";
 
 my $wrksp = "./";
 

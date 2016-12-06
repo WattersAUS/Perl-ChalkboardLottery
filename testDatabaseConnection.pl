@@ -42,10 +42,10 @@ sub DebugMessage {
 #-----------------------------------------------------------------------------
 
 ## mysql user connection details
-my $db   = "shinyide2_lottery";
-my $user = "shinyide2_ro";
-my $pass = "R3l9c675";
-my $host = "10.169.0.121";
+my $db   = "";
+my $user = "";
+my $pass = "";
+my $host = "";
 
 ## SQL query
 my $tableQuery = "show tables";
