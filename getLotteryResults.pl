@@ -16,6 +16,7 @@
 #	2016-12-06	v1.01		Moved msg in extractFromArray to end of func
 #                           Rewrote processSQLBuffer
 #                           Rewrote processLotteryDraws
+#	2016-12-21	v1.02		Incorrectly reporting array size in extractFromArray
 #
 
 use lib "/var/sites/s/shiny-ideas.tech/bin/Classes";
@@ -39,7 +40,7 @@ use Lottery::number_usage;
 # only globals in the whole program (I hope)
 #-----------------------------------------------------------------------------
 
-my $version_id = "1.01";
+my $version_id = "1.02";
 
 #-----------------------------------------------------------------------------
 # this holds sql statements batched up (bit like a transaction for each line)
@@ -168,7 +169,7 @@ sub extractFromArray {
             push(@extracted, $line);
         }
     }
-    logMessage($ident, "Searched for tag (".$tag.") in results page and extracted (".$#extracted.") numbers...");
+    logMessage($ident, "Searched for tag (".$tag.") in results page and extracted (".$#extracted + 1.") numbers...");
     return (@extracted);
 }
 
