@@ -169,7 +169,7 @@ sub extractFromArray {
             push(@extracted, $line);
         }
     }
-    logMessage($ident, "Searched for tag (".$tag.") in results page and extracted (".$#extracted + 1.") numbers...");
+    logMessage($ident, "Searched for tag (".$tag.") in results page and extracted (".($#extracted + 1).") numbers...");
     return (@extracted);
 }
 
