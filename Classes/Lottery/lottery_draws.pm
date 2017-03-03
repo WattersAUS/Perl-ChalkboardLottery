@@ -5,6 +5,7 @@
 #	==========	=======		========================================================================
 #	2016-11-21	v1.00		Original
 #	2016-11-27	v1.01		Change type of ident from "E" to "A"
+#	2017-03-03	v1.03		Added is_bonus int field to table
 #
 package lottery_draws;
 use TableDefault;
@@ -21,6 +22,7 @@ my %fields = (
 	upper_number	=> [ undef, undef, 'I', -1, -1 ],	# int
 	numbers_tag		=> [ undef, undef, 'S', 32, -1 ],	# character varying(32)
 	specials		=> [ undef, undef, 'I', -1, -1 ],	# int
+	is_bonus		=> [ undef, undef, 'I', -1, -1 ],	# int
 	upper_special	=> [ undef, undef, 'I', -1, -1 ],	# int
 	specials_tag	=> [ undef, undef, 'S', 32, -1 ],	# character varying(32)
 	base_url		=> [ undef, undef, 'S', 32, -1 ],	# character varying(32)
