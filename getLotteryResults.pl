@@ -1,22 +1,8 @@
 #!/usr/bin/perl -w
 #
-#	Program: updateLotteryResults.pl (2016-11-21) G.J.Watson
-#
-#	Purpose: download / parse / store results from the lottery games
-#
-#	Date		Version		Note
-#	==========	=======		==================================================
-#	2016-11-21	v0.01		First cut of code
-#	2016-11-27	v0.02		First attempt at basic functionality
-#	2016-11-28	v0.03		Moved logger write to sqlBuffer
-#	2016-11-30	v0.04		Added a WorkSpace directory for file processing
-#	2016-12-04	v0.05		Inserts/Update code in place
-#	2016-12-05	v0.06		Fixed regrex for date extraction
-#	2016-12-05	v1.00		Release version
-#	2016-12-06	v1.01		Moved msg in extractFromArray to end of func
-#                           Rewrote processSQLBuffer
-#                           Rewrote processLotteryDraws
-#	2016-12-21	v1.02		Incorrectly reporting array size in extractFromArray
+# Program: getLotteryResults.pl
+#    Desc: retrieve lottery results via URL and decode page
+# Version: v1.03
 #
 
 use lib "/var/sites/s/shiny-ideas.tech/bin/Classes";
@@ -40,7 +26,7 @@ use Lottery::number_usage;
 # only globals in the whole program (I hope)
 #-----------------------------------------------------------------------------
 
-my $version_id = "1.02";
+my $version_id = "1.03";
 
 #-----------------------------------------------------------------------------
 # this holds sql statements batched up (bit like a transaction for each line)
@@ -85,9 +71,9 @@ sub logMessage {
 
 sub debugMessage {
     my $debugMsg = shift;
-	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime(time);
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime(time);
     if ($opt_t) {
-		printf "[ %4d-%02d-%02d %02d:%02d:%02d ] ", $year+1900,$mon+1,$mday,$hour,$min,$sec;
+        printf "[ %4d-%02d-%02d %02d:%02d:%02d ] ", $year+1900,$mon+1,$mday,$hour,$min,$sec;
     }
     print "DEBUG: ";
     if (defined($debugMsg)) {
@@ -103,15 +89,15 @@ sub debugMessage {
 
 sub buildLogger {
     my $ident    = shift;
-	my $message  = shift;
-	my $logger   = new logger;
+    my $message  = shift;
+    my $logger   = new logger;
     $logger->ident($ident);
-	$logger->description($message);
-	$logger->last_modified("now()");
-	$logger->CreateINSERT;
-	debugMessage($logger->{SQL_STATEMENT}->[0]);
+    $logger->description($message);
+    $logger->last_modified("now()");
+    $logger->CreateINSERT;
+    debugMessage($logger->{SQL_STATEMENT}->[0]);
     push(@sqlBuffer, $logger->{SQL_STATEMENT}->[0]);
-	return;
+    return;
 }
 
 #-----------------------------------------------------------------------------
@@ -269,18 +255,18 @@ sub checkNumbersWithinLimits {
 
 sub buildNewNumberUsage {
     my $ident       = shift;
-	my $draw        = shift;
-	my $number      = shift;
-	my $isSpecial   = shift;
-	my $numberUsage = new number_usage;
+    my $draw        = shift;
+    my $number      = shift;
+    my $isSpecial   = shift;
+    my $numberUsage = new number_usage;
     $numberUsage->ident($ident);
-	$numberUsage->draw($draw);
-	$numberUsage->number($number);
-	$numberUsage->is_special($isSpecial);
-	$numberUsage->CreateINSERT;
+    $numberUsage->draw($draw);
+    $numberUsage->number($number);
+    $numberUsage->is_special($isSpecial);
+    $numberUsage->CreateINSERT;
     debugMessage($numberUsage->{SQL_STATEMENT}->[0]);
-	push(@sqlBuffer, $numberUsage->{SQL_STATEMENT}->[0]);
-	return;
+    push(@sqlBuffer, $numberUsage->{SQL_STATEMENT}->[0]);
+    return;
 }
 
 sub storeNumberUsage {
@@ -300,17 +286,17 @@ sub storeNumberUsage {
 
 sub buildNewDrawHistory {
     my $ident       = shift;
-	my $draw        = shift;
-	my $drawDate    = shift;
-	my $drawHistory = new draw_history;
+    my $draw        = shift;
+    my $drawDate    = shift;
+    my $drawHistory = new draw_history;
     $drawHistory->ident($ident);
-	$drawHistory->draw($draw);
-	$drawHistory->draw_date($drawDate);
+    $drawHistory->draw($draw);
+    $drawHistory->draw_date($drawDate);
     $drawHistory->last_modified("now()");
-	$drawHistory->CreateINSERT;
+    $drawHistory->CreateINSERT;
     debugMessage($drawHistory->{SQL_STATEMENT}->[0]);
-	push(@sqlBuffer, $drawHistory->{SQL_STATEMENT}->[0]);
-	return;
+    push(@sqlBuffer, $drawHistory->{SQL_STATEMENT}->[0]);
+    return;
 }
 
 sub storeDrawHistory {
@@ -338,6 +324,7 @@ sub processLotteryDraws {
     $draws->ResetKEYFIELDS;
     $draws->DataSAVE;
     $draws->CreateSELECT;
+    $draws->{SQL_STATEMENT}->[0] .= " WHERE end_date IS NULL";
     debugMessage($draws->{SQL_STATEMENT}->[0]);
     my $sth = $dbHandle->prepare($draws->{SQL_STATEMENT}->[0]);
     $sth->execute;
@@ -419,18 +406,18 @@ sub processLotteryDraws {
 #-----------------------------------------------------------------------------
 
 sub processSQLBuffer {
-	my $dbHandle = shift;
+    my $dbHandle = shift;
     if ($opt_i) {
         debugMessage("Applying SQL Statements to database...");
         foreach my $sql_statement (@sqlBuffer) {
-    			my $sth = $dbHandle->prepare($sql_statement);
-    			$sth->execute;
-    	}
+                my $sth = $dbHandle->prepare($sql_statement);
+                $sth->execute;
+        }
     } else {
         debugMessage("Database writes are disabled...");
     }
-	@sqlBuffer = qw();
-	return;
+    @sqlBuffer = qw();
+    return;
 }
 
 #-----------------------------------------------------------------------------
@@ -452,26 +439,26 @@ getopts('dhitw:');
 
 # help screen
 if (defined($opt_h)) {
-	debugHelpMessage("\n\tLottery Data Upload Utility ".$version_id);
-	debugHelpMessage("\t================================");
-	debugHelpMessage( "\t-i (Activate Writing to DB)");
-	debugHelpMessage( "\t-h (view this HELP Mode)");
-	debugHelpMessage( "\t-d (turn on DEBUG Mode)");
-	debugHelpMessage( "\t-t (turn on date/time stamp on DEBUG messages)");
+    debugHelpMessage("\n\tLottery Data Upload Utility ".$version_id);
+    debugHelpMessage("\t================================");
+    debugHelpMessage( "\t-i (Activate Writing to DB)");
+    debugHelpMessage( "\t-h (view this HELP Mode)");
+    debugHelpMessage( "\t-d (turn on DEBUG Mode)");
+    debugHelpMessage( "\t-t (turn on date/time stamp on DEBUG messages)");
     debugHelpMessage( "\t-w <DIR>         (workspace directory to use)\n");
-	exit(0);
+    exit(0);
 }
 
 # date/time stamp on DEBUG messages
 if (defined($opt_t)) {
-	debugMessage("Date/Time Stamp Active");
+    debugMessage("Date/Time Stamp Active");
 } else {
     debugMessage("Date/Time Stamp Inactive");
 }
 
 # work directory
 if (defined($opt_w)) {
-	$wrksp = $opt_w;
+    $wrksp = $opt_w;
 }
 debugMessage(" Work Space: ".$wrksp);
 
