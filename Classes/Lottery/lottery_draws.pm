@@ -1,11 +1,9 @@
 #
-#	Module: lottery_draws.pm (2016-11-21) G.J.Watson
+#  Module: lottery_draws.pm
+#    Desc: description module for lottery_draws table
+# Version: v1.03
 #
-#	Date		Version		Note
-#	==========	=======		========================================================================
-#	2016-11-21	v1.00		Original
-#	2016-11-27	v1.01		Change type of ident from "E" to "A"
-#
+
 package lottery_draws;
 use TableDefault;
 
@@ -25,6 +23,7 @@ my %fields = (
 	specials_tag	=> [ undef, undef, 'S', 32, -1 ],	# character varying(32)
 	base_url		=> [ undef, undef, 'S', 32, -1 ],	# character varying(32)
 	last_modified	=> [ undef, undef, 'Z', -1, -1 ],	# DateTime
+	end_date        => [ undef, undef, 'D', -1, -1 ],	# Date
 );
 
 sub new {

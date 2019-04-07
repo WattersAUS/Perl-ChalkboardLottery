@@ -1,22 +1,8 @@
 #!/usr/bin/perl -w
 #
-#	Program: updateLotteryResults.pl (2016-11-21) G.J.Watson
-#
-#	Purpose: download / parse / store results from the lottery games
-#
-#	Date		Version		Note
-#	==========	=======		==================================================
-#	2016-11-21	v0.01		First cut of code
-#	2016-11-27	v0.02		First attempt at basic functionality
-#	2016-11-28	v0.03		Moved logger write to sqlBuffer
-#	2016-11-30	v0.04		Added a WorkSpace directory for file processing
-#	2016-12-04	v0.05		Inserts/Update code in place
-#	2016-12-05	v0.06		Fixed regrex for date extraction
-#	2016-12-05	v1.00		Release version
-#	2016-12-06	v1.01		Moved msg in extractFromArray to end of func
-#                           Rewrote processSQLBuffer
-#                           Rewrote processLotteryDraws
-#	2016-12-21	v1.02		Incorrectly reporting array size in extractFromArray
+# Program: getLotteryResults.pl
+#    Desc: retrieve lottery results via URL and decode page
+# Version: v1.03
 #
 
 use lib "/var/sites/s/shiny-ideas.tech/bin/Classes";
@@ -40,7 +26,7 @@ use Lottery::number_usage;
 # only globals in the whole program (I hope)
 #-----------------------------------------------------------------------------
 
-my $version_id = "1.02";
+my $version_id = "1.03";
 
 #-----------------------------------------------------------------------------
 # this holds sql statements batched up (bit like a transaction for each line)
@@ -338,6 +324,7 @@ sub processLotteryDraws {
     $draws->ResetKEYFIELDS;
     $draws->DataSAVE;
     $draws->CreateSELECT;
+    $draws->{SQL_STATEMENT}->[0] .= " WHERE end_date IS NULL";
     debugMessage($draws->{SQL_STATEMENT}->[0]);
     my $sth = $dbHandle->prepare($draws->{SQL_STATEMENT}->[0]);
     $sth->execute;
