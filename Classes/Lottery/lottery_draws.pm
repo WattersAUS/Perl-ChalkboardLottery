@@ -19,6 +19,7 @@ my %fields = (
 	upper_number	=> [ undef, undef, 'I', -1, -1 ],	# int
 	numbers_tag		=> [ undef, undef, 'S', 32, -1 ],	# character varying(32)
 	specials		=> [ undef, undef, 'I', -1, -1 ],	# int
+	is_bonus		=> [ undef, undef, 'I', -1, -1 ],	# int
 	upper_special	=> [ undef, undef, 'I', -1, -1 ],	# int
 	specials_tag	=> [ undef, undef, 'S', 32, -1 ],	# character varying(32)
 	base_url		=> [ undef, undef, 'S', 32, -1 ],	# character varying(32)
