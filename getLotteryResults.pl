@@ -2,7 +2,7 @@
 #
 # Program: getLotteryResults.pl
 #    Desc: retrieve lottery results via URL and decode page
-# Version: v1.03
+# Version: v1.04
 #
 
 use lib "/var/sites/s/shiny-ideas.tech/bin/Classes";
@@ -26,7 +26,7 @@ use Lottery::number_usage;
 # only globals in the whole program (I hope)
 #-----------------------------------------------------------------------------
 
-my $version_id = "1.03";
+my $version_id = "1.04";
 
 #-----------------------------------------------------------------------------
 # this holds sql statements batched up (bit like a transaction for each line)
@@ -206,7 +206,7 @@ sub extractDayMonthYearFromArray {
     my @data = @_;
 
     foreach my $line (@data) {
-        if ($line =~ m/<h1>[MTWTFS][ouehra][neduit].*20[12][1-9]<\/h1>/) {
+        if ($line =~ m/<h1>[MTWTFS][ouehra][neduit].*20[12][0-9]<\/h1>/) {
             $line =~ s/^[ \t]*//;
             $line =~ s/<[\/]{0,1}h1>//g;
             $line =~ s/\n//g;
