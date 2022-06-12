@@ -5,7 +5,7 @@
 # Version: v1.04
 #
 
-use lib "/var/sites/s/shiny-ideas.tech/bin/Classes";
+use lib "/home/pi/lib/Classes";
 
 use strict;
 use vars qw($opt_d $opt_h $opt_i $opt_t $opt_w);
